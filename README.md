@@ -4,14 +4,13 @@ Python test
 Please implement following set of classes in Python.
 
 Class Workload that contains following fields:
-IP string, credentials of type Credentials
+IP string, 
+credentials of type Credentials
 Storage that contains list of instances of type MountPoint
 
-Class Credentials that contains the following fields
+Class Credentials that contains the following fields:
 Username - string
-
 Password - string
-
 Domain - string
 
 Class MountPoint that contains following fields:
@@ -27,21 +26,28 @@ Cloud type: aws, azure, vsphere, vcloud - no other values are allowed
 Cloud Credentials of type Credentials
 Target Vm object of type Workload
 
-Define class Migration that contains the following
+Define class Migration that contains the following:
 Selected Mount points: list of MountPoint
 Source of type Workload
-
 Migration Target of type MigrationTarget
 Migration state: not started, running, error, success
-Implement run() method - run method should sleep for X min (simulate running migration) copy source object to the Migration Target.Target VM  and target should only have mount points that are selected. For example, if source has: C:\ D: and E:\ and only C: was selected, target should only have C:\
+
+Implement run() method - run method should sleep for X min (simulate running migration) copy source object to the Migration Target.Target VM 
+and target should only have mount points that are selected. For example, if source has: C:\ D: and E:\ and only C: was selected, target should only have C:\
 
 Implement business logic to not allow running migrations when volume C:\ is not allowed
 
-Implement persistence layer to allow to save all those classes into filesystem. It should allow to create, update, read and delete objects. You cannot have more than one source with the same IP.  Hints: json/pickle/filesystem
+Implement persistence layer to allow to save all those classes into filesystem. 
+It should allow to create, update, read and delete objects. 
+You cannot have more than one source with the same IP.  
+Hints: json/pickle/filesystem
 
 
+The solution should work on Linux. 
+Assume that you are writing production quality code - same quality and same coding standards (PEP-8),  
+code and package structure. 
 
-The solution should work on Linux. Assume that you are writing production quality code - same quality and same coding standards (PEP-8),  code and package structure. Unit tests are a requirement
+Unit tests are a requirement
 
 
 Bonus:
