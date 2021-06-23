@@ -2,7 +2,6 @@
 Classes for migrate process
 """
 import ipaddress
-import pickle
 
 CLOUD_TYPES = ('aws', 'azure', 'vsphere', 'vcloud')
 MIGRATION_STATES = ('not started', 'running', 'error', 'success')
@@ -52,29 +51,29 @@ class Source(WorkLoad):
 class MigrationTarget:
     def __init__(
         self,
-        cloud_type=0,
-        cloud_credentials=Credentials(),
-        target_vm=WorkLoad(),
+        cloud_type,
+        cloud_credentials,
+        target_vm,
     ):
         if 0 <= cloud_type < len(CLOUD_TYPES):
             self.cloud_type = cloud_type
         else:
             self.cloud_type = 0
         self.cloud_credentials = cloud_credentials
-        self.target_vm=target_vm
+        self.target_vm = target_vm
 
 
 class Migration:
     def __init__(
         self,
-        selected_mount_points=[],
-        source=Source(),
-        migration_target=MigrationTarget(),
+        selected_mount_points,
+        source,
+        migration_target,
         migration_state=0,
     ):
-        self.selected_mount_points = set()
+        self.selected_mount_points = set(selected_mount_points)
         self.source = source
-        self.migration_target = MigrationTarget
+        self.migration_target = migration_target
         if 0 <= migration_state < len(MIGRATION_STATES):
             self.migration_state = migration_state
         else:
@@ -119,5 +118,5 @@ class AllCollection:
     def __init__(self, sources, migration_targets, migrations):
         self.sources = sources
         self.migration_targets = migration_targets
-        self.migtations = migrations
+        self.migrations = migrations
 
