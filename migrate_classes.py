@@ -240,7 +240,7 @@ class Migration:
             self.migration_target.logout_from_cloud()
         else:
             self._migration_state = 2
-        self._migration_state = 3 if self._migration_state = 1
+        self._migration_state = 3 if self._migration_state != 2 else 2
         return self.migration_state
 
     def __str__(self):
