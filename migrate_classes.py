@@ -47,24 +47,27 @@ class Credentials:
         password='',
         domain=''
     ):
-        self.user_name = user_name
-        self.password = password
-        self.domain = domain
+        self.user_name = str(user_name)
+        self.password = str(password)
+        self.domain = str(domain)
 
     def __str__(self):
         return f"user_name:{self.user_name}, " \
                f"password:{self.password}, " \
-               f"domain: {self.domain} "
+               f"domain: {self.domain}"
 
 
 class MountPoint:
     def __init__(
         self,
-        mount_point_name='',
-        total_size=0,
+        mount_point_name: str = '',
+        total_size: int = 0,
     ):
-        self.mount_point_name = mount_point_name
-        self.total_size = total_size
+        self.mount_point_name = str(mount_point_name)
+        try:
+            self.total_size = int(total_size)
+        except ValueError:
+            self.total_size = 0
 
     def is_allow(self):
         """
@@ -82,7 +85,7 @@ class WorkLoad:
         self,
         ip,
         credentials=Credentials(),
-        storage=[MountPoint],
+        storage: list = [],
     ):
         try:
             self.ip = ipaddress.ip_address(ip)
@@ -105,6 +108,7 @@ class WorkLoad:
         """
         if not self.get_mount_point(mount_point.mount_point_name):
             self.storage.append(mount_point)
+        return self.storage[-1]
 
     def delete_mount_point(self, mount_point_name):
         try:
@@ -137,9 +141,12 @@ class WorkLoad:
         self.is_logged_in = False
 
     def is_allow_mount_point(self, mount_point: MountPoint):
-        if not self.is_logged_in:
-            self.is_logged_in = self.login_to_target()
-        return mount_point.is_allow() if self.is_logged_in else False
+        mp = self.get_mount_point(mount_point.mount_point_name)
+        if mp:
+            if not self.is_logged_in:
+                self.is_logged_in = self.login_to_target()
+            return mp.is_allow() if self.is_logged_in else False
+        return False
 
     def __str__(self):
         s = f"ip = {self.ip}, " \
