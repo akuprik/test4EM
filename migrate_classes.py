@@ -2,6 +2,7 @@
 Classes for migrate process
 """
 import ipaddress
+from time import sleep
 
 CLOUD_TYPES = ('aws', 'azure', 'vsphere', 'vcloud')
 MIGRATION_STATES = ('not started', 'running', 'error', 'success')
@@ -26,7 +27,7 @@ class TrustList(list):
             return item
         return self.pop(i)
 
-    def get_itme_by_index(self, index):
+    def get_item_by_index(self, index):
         try:
             return self[index]
         except IndexError:
@@ -65,6 +66,13 @@ class MountPoint:
         self.mount_point_name = mount_point_name
         self.total_size = total_size
 
+    def is_allow(self):
+        """
+        Write real code for check allow
+        :return: boolean
+        """
+        return True
+
     def __str__(self):
         return f"m_p_n:'{self.mount_point_name}', sz:{self.total_size}"
 
@@ -82,6 +90,7 @@ class WorkLoad:
             self.ip = ipaddress.ip_address('127.0.0.1')
         self.credentials = credentials
         self.storage = storage
+        self.is_logged_in = False
 
     def get_mount_point(self, mount_point_name):
         for x in self.storage:
@@ -114,6 +123,24 @@ class WorkLoad:
         """
         return f"{self.ip}{self.credentials}"
 
+    def login_to_target(self):
+        """
+        write real code for log in to ip with credentials
+        :return: True if success
+        """
+        return True
+
+    def logout_from_target(self):
+        """
+        write real code for logout
+        """
+        self.is_logged_in = False
+
+    def is_allow_mount_point(self, mount_point: MountPoint):
+        if not self.is_logged_in:
+            self.is_logged_in = self.login_to_target()
+        return mount_point.is_allow() if self.is_logged_in else False
+
     def __str__(self):
         s = f"ip = {self.ip}, " \
             f"{self.credentials}, " \
@@ -140,6 +167,20 @@ class MigrationTarget:
             self.cloud_type = 0
         self.cloud_credentials = cloud_credentials
         self.target_vm = target_vm
+        self.is_cloud_login = False
+
+    def login_to_cloud(self):
+        """
+        write real code for log in to ip with cloud credentials
+        :return: True if success
+        """
+        return True
+
+    def logout_from_cloud(self):
+        """
+        write real code for logout
+        """
+        self.is_cloud_login = False
 
     def __str__(self):
         return f"c_t:{CLOUD_TYPES[self.cloud_type]} c_cred:({self.cloud_credentials}) " \
@@ -152,29 +193,62 @@ class Migration:
         selected_mount_points: list,
         source: Source,
         migration_target: MigrationTarget,
-        migration_state=0,
     ):
         self.selected_mount_points = set(selected_mount_points)
         self.source = source
         self.migration_target = migration_target
-        if 0 <= migration_state < len(MIGRATION_STATES):
-            self.migration_state = migration_state
-        else:
-            self.migration_state = 0
+        self._migration_state = 0
+
+    @property
+    def migration_state(self):
+        return MIGRATION_STATES[self._migration_state]
 
     def key_for_search(self):
         return f"{''.join(self.selected_mount_points)}" \
                f"{self.source.ip}" \
                f"{self.migration_target}"
 
+    def copy_source_to_target(self, source_point, target_point):
+        """
+        write real code for copy
+        :param source_point: MountPoint
+        :param target_point: MountPoint
+        :return:
+        """
+        print(f"copy {source_point} to {target_point}")
+        sleep(61)
+        return True
+
     def run(self):
+        self._migration_state = 1
+        if not self.migration_target.is_cloud_login:
+            self.migration_target.is_cloud_login = \
+                self.migration_target.login_to_cloud()
+        if self.migration_target.is_cloud_login:
+            for source_mount_point in self.source.storage:
+                if self.source.is_allow_mount_point(source_mount_point):
+                    for target_point in self.migration_target.target_vm.storage:
+                        """Only selected"""
+                        if target_point.mount_point_name in self.selected_mount_points:
+                            if not (
+                                self.copy_source_to_target(
+                                    source_mount_point,
+                                    target_point,
+                                )
+                            ):
+                                self._migration_state = 2
+            self.migration_target.logout_from_cloud()
+        else:
+            self._migration_state = 2
+        self._migration_state = 3 if self._migration_state = 1
         return self.migration_state
 
     def __str__(self):
         return f"(selected: {', '.join(self.selected_mount_points)} " \
                f"source: {self.source} " \
                f"m_target: {self.migration_target} " \
-               f"m_state: {MIGRATION_STATES[self.migration_state]}) "
+               f"m_state: {self.migration_state}) "
+
 
 class Sources(dict):
     """
@@ -185,10 +259,7 @@ class Sources(dict):
         ensures the uniqueness of the source IP
         :param source: Source
         """
-        try:
-            self[source.ip] = source
-        except:
-            pass
+        self[source.ip] = source
         return self[source.ip]
 
     def __str__(self):
