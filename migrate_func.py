@@ -21,9 +21,9 @@ def get_all_collection(filename='migrates.pkl'):
     return migrate_classes.AllCollection()
 
 
-def safe_all_collection(all_collection, filename='migrates.pkl'):
+def save_all_collection(all_collection, filename='migrates.pkl'):
     """
-    safe to file all migration objects
+    save to file all migration objects
     :param all_collection: migrate_classes.AllCollection
     :param filename: path
     """

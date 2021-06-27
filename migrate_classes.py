@@ -7,6 +7,8 @@ from time import sleep
 CLOUD_TYPES = ('aws', 'azure', 'vsphere', 'vcloud')
 MIGRATION_STATES = ('not started', 'running', 'error', 'success')
 
+SLEEP_RUN = 60  # delay in simulating migration
+
 
 class TrustList(list):
     """
@@ -84,15 +86,15 @@ class WorkLoad:
     def __init__(
         self,
         ip,
-        credentials=Credentials(),
-        storage: list = [],
+        credentials: Credentials = None,
+        storage: list = None,
     ):
         try:
             self.ip = ipaddress.ip_address(ip)
         except ValueError:
             self.ip = ipaddress.ip_address('127.0.0.1')
-        self.credentials = credentials
-        self.storage = storage
+        self.credentials = credentials if credentials else Credentials()
+        self.storage = storage if storage else list()
         self.is_logged_in = False
 
     def get_mount_point(self, mount_point_name):
@@ -190,7 +192,8 @@ class MigrationTarget:
         self.is_cloud_login = False
 
     def __str__(self):
-        return f"c_t:{CLOUD_TYPES[self.cloud_type]} c_cred:({self.cloud_credentials}) " \
+        return f"c_t:{CLOUD_TYPES[self.cloud_type]} " \
+               f"c_cred:({self.cloud_credentials}) " \
                f"t_vm:({self.target_vm})"
 
 
@@ -205,6 +208,7 @@ class Migration:
         self.source = source
         self.migration_target = migration_target
         self._migration_state = 0
+        self.migrate_log = []
 
     @property
     def migration_state(self):
@@ -222,25 +226,26 @@ class Migration:
         :param target_point: MountPoint
         :return:
         """
-        print(f"copy {source_point} to {target_point}")
-        sleep(61)
+        self.migrate_log.append(f"copy {source_point} to {target_point}")
+        sleep(SLEEP_RUN)  # delay in simulating migration
         return True
 
     def run(self):
         self._migration_state = 1
+        self.migrate_log.clear()
         if not self.migration_target.is_cloud_login:
             self.migration_target.is_cloud_login = \
                 self.migration_target.login_to_cloud()
         if self.migration_target.is_cloud_login:
             for source_mount_point in self.source.storage:
                 if self.source.is_allow_mount_point(source_mount_point):
-                    for target_point in self.migration_target.target_vm.storage:
+                    for tp in self.migration_target.target_vm.storage:
                         """Only selected"""
-                        if target_point.mount_point_name in self.selected_mount_points:
+                        if tp.mount_point_name in self.selected_mount_points:
                             if not (
                                 self.copy_source_to_target(
                                     source_mount_point,
-                                    target_point,
+                                    tp,
                                 )
                             ):
                                 self._migration_state = 2
@@ -304,15 +309,17 @@ class AllCollection:
     """
     def __init__(
         self,
-        sources=Sources(),
-        migration_targets=MigrationTargets(),
-        migrations=Migrations(),
+        sources: Sources = None,
+        migration_targets: MigrationTargets = None,
+        migrations: Migrations = None,
     ):
-        self.sources = sources
-        self.migration_targets = migration_targets
-        self.migrations = migrations
+        self.sources = sources if sources else Sources()
+        self.migration_targets = migration_targets if (
+            migration_targets
+        ) else MigrationTargets()
+        self.migrations = migrations if migrations else Migrations()
 
-    def add_new_source(self, ip, username, password, domain, storage=[]):
+    def add_new_source(self, ip, username, password, domain, storage=None):
         """
         Creates the new source and adds to the list
         :param ip: ip_address
@@ -327,7 +334,10 @@ class AllCollection:
         return source
 
     def delete_source(self, ip):
-        return self.sources.pop(ip)
+        try:
+            return self.sources.pop(ip)
+        except KeyError:
+            return None
 
     def add_new_migration_target(
         self,

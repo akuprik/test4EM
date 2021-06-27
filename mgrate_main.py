@@ -32,4 +32,4 @@ migration = all_collection.add_new_migration(['C:\\'],source,migration_target)
 print (migration)
 
 
-migrate_func.safe_all_collection(all_collection)
+migrate_func.save_all_collection(all_collection)
